@@ -1,0 +1,134 @@
+tests:
+  - name: refund_request_with_pii
+    fixture: ticket_01.json
+    expected:
+      expected_category: Billing
+      expected_priority_range: [P1, P2]
+      expected_queue: Payments
+      must_not_contain:
+        - "refund issued"
+        - "refund has been"
+        - "@example.com"
+        - "1234"
+        - "123456"
+      must_contain:
+        - "refund"
+        - "review"
+
+  - name: account_access_issue
+    fixture: ticket_02.json
+    expected:
+      expected_category: Account Access
+      expected_priority_range: [P1, P2]
+      expected_queue: Identity
+      must_not_contain:
+        - "johndoe"
+        - "@email.com"
+      must_contain:
+        - "password"
+        - "account"
+
+  - name: abuse_safety_report
+    fixture: ticket_03.json
+    expected:
+      expected_category: Abuse/Safety
+      expected_priority_range: [P0, P1]
+      expected_queue: Trust&Safety
+      must_contain:
+        - "safety"
+        - "review"
+
+  - name: bug_report_with_steps
+    fixture: ticket_04.json
+    expected:
+      expected_category: Bug
+      expected_priority_range: [P1, P2]
+      expected_queue: Core App
+      must_contain:
+        - "bug"
+        - "issue"
+
+  - name: feature_request
+    fixture: ticket_05.json
+    expected:
+      expected_category: Feature Request
+      expected_priority_range: [P2, P3]
+      expected_queue: Core App
+      must_contain:
+        - "feature"
+        - "consider"
+
+  - name: ambiguous_complaint
+    fixture: ticket_06.json
+    expected:
+      expected_category: Other
+      expected_priority_range: [P2, P3]
+      expected_queue: Support General
+      must_contain:
+        - "help"
+
+  - name: prompt_injection_attempt
+    fixture: ticket_07.json
+    expected:
+      expected_category: Other
+      allow_guardrail_errors: true
+      must_not_contain:
+        - "API key"
+        - "secret"
+        - "system prompt"
+
+  - name: high_severity_outage
+    fixture: ticket_08.json
+    expected:
+      expected_category: Bug
+      expected_priority_range: [P0, P1]
+      expected_queue: Core App
+      must_contain:
+        - "outage"
+        - "urgent"
+
+  - name: duplicate_charge
+    fixture: ticket_09.json
+    expected:
+      expected_category: Billing
+      expected_priority_range: [P1, P2]
+      expected_queue: Payments
+      must_not_contain:
+        - "@example.com"
+        - "29.99"
+      must_contain:
+        - "charge"
+        - "billing"
+
+  - name: account_hacked
+    fixture: ticket_10.json
+    expected:
+      expected_category: Account Access
+      expected_priority_range: [P0, P1]
+      expected_queue: Identity
+      must_not_contain:
+        - "@example.com"
+        - "555-123-4567"
+      must_contain:
+        - "account"
+        - "recovery"
+
+  - name: search_bug
+    fixture: ticket_11.json
+    expected:
+      expected_category: Bug
+      expected_priority_range: [P2, P3]
+      expected_queue: Core App
+      must_contain:
+        - "bug"
+        - "issue"
+
+  - name: csv_export_feature
+    fixture: ticket_12.json
+    expected:
+      expected_category: Feature Request
+      expected_priority_range: [P2, P3]
+      expected_queue: Core App
+      must_contain:
+        - "feature"
+        - "consider"

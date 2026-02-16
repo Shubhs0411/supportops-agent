@@ -1,0 +1,7 @@
+{
+  "content": "The app crashes every time I try to upload a file. I'm using iOS 17.1 on an iPhone 14. Steps to reproduce: 1) Open app 2) Tap upload button 3) Select file 4) App crashes immediately. This happens 100% of the time.",
+  "metadata": {
+    "source": "web",
+    "timestamp": "2024-01-15T13:00:00Z"
+  }
+}

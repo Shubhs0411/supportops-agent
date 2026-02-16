@@ -1,0 +1,7 @@
+{
+  "content": "Hi, I need a refund for order #123456. I purchased a subscription last month but didn't use it. My email is customer@example.com and I paid with credit card ending in 1234.",
+  "metadata": {
+    "source": "email",
+    "timestamp": "2024-01-15T10:00:00Z"
+  }
+}
