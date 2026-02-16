@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import AsyncGenerator, Dict, Any
+from typing import Any, AsyncGenerator, Dict
 
 from fastapi.responses import StreamingResponse
 

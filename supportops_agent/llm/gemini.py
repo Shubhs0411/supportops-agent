@@ -37,7 +37,7 @@ class GeminiClient:
 
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel(self.model_name)
-        
+
         # Circuit breaker for resilience
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=5,
@@ -146,7 +146,7 @@ class GeminiClient:
                     )
 
                 response: GenerateContentResponse = self.circuit_breaker.call(_call_gemini)
-            
+
             metrics.increment("llm.gemini.calls", tags={"model": self.model_name})
 
             if not response.text:

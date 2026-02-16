@@ -4,7 +4,7 @@ import json
 import logging
 import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from langgraph.graph import END, StateGraph
 from opentelemetry import trace
@@ -18,7 +18,6 @@ from supportops_agent.agents.prompts import (
     CLASSIFICATION_PROMPT,
     DRAFT_RESPONSE_PROMPT,
     ROUTING_PROMPT,
-    VERIFICATION_PROMPT,
 )
 from supportops_agent.agents.schemas import (
     AgentState,
@@ -27,8 +26,8 @@ from supportops_agent.agents.schemas import (
     RoutingResult,
 )
 from supportops_agent.llm.gemini import GeminiClient
-from supportops_agent.tools import create_ticket_in_system, policy_search, send_email_preview
 from supportops_agent.metrics import get_metrics
+from supportops_agent.tools import policy_search
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -43,7 +42,7 @@ def sanitize_node(state: AgentState) -> AgentState:
     with tracer.start_as_current_span("sanitize_node") as span, metrics.timer("agent.node.sanitize"):
         # Convert to dict for easier manipulation
         state_dict = state.model_dump() if isinstance(state, AgentState) else state
-        
+
         raw_ticket = state_dict.get("raw_ticket", {})
         ticket_content = raw_ticket.get("content", "") or json.dumps(raw_ticket)
 
@@ -76,7 +75,7 @@ def classify_node(state: AgentState) -> AgentState:
     with tracer.start_as_current_span("classify_node") as span, metrics.timer("agent.node.classify"):
         # Convert to dict for easier manipulation
         state_dict = state.model_dump() if isinstance(state, AgentState) else state
-        
+
         sanitized = state_dict.get("sanitized_ticket", "")
 
         messages = [
@@ -158,7 +157,7 @@ def retrieve_policy_node(state: AgentState) -> AgentState:
     with tracer.start_as_current_span("retrieve_policy_node") as span:
         # Convert to dict for easier manipulation
         state_dict = state.model_dump() if isinstance(state, AgentState) else state
-        
+
         classification = state_dict.get("classification_result", {})
         category = classification.get("category", "")
 
@@ -204,7 +203,7 @@ def route_node(state: AgentState) -> AgentState:
     with tracer.start_as_current_span("route_node") as span:
         # Convert to dict for easier manipulation
         state_dict = state.model_dump() if isinstance(state, AgentState) else state
-        
+
         classification = state_dict.get("classification_result", {})
 
         messages = [
@@ -267,7 +266,7 @@ def draft_node(state: AgentState) -> AgentState:
     with tracer.start_as_current_span("draft_node") as span:
         # Convert to dict for easier manipulation
         state_dict = state.model_dump() if isinstance(state, AgentState) else state
-        
+
         # Use sanitized ticket (PII already redacted)
         sanitized = state_dict.get("sanitized_ticket", "")
         # If sanitized is empty, try to get content from raw_ticket but ensure it's a string
@@ -277,7 +276,7 @@ def draft_node(state: AgentState) -> AgentState:
                 sanitized = raw_ticket.get("content", json.dumps(raw_ticket))
             else:
                 sanitized = str(raw_ticket)
-        
+
         classification = state_dict.get("classification_result", {})
         policy_snippets = state_dict.get("policy_snippets", [])
 
@@ -314,8 +313,9 @@ def draft_node(state: AgentState) -> AgentState:
                 try:
                     parsed = json.loads(draft)
                     draft = parsed.get("text", draft)
-                except:
-                    pass
+                except json.JSONDecodeError:
+                    # If parsing fails, fall back to original draft
+                    logger.warning("Failed to parse JSON-wrapped draft response, using raw text")
 
             # Additional PII check on draft response - redact any PII that leaked through
             draft_redacted, pii_events = redact_pii(draft)
@@ -328,7 +328,7 @@ def draft_node(state: AgentState) -> AgentState:
                     event_dict["node"] = "draft"
                     event_dict["severity"] = "error"  # PII in response is more serious
                     state_dict.setdefault("guardrail_events", []).append(event_dict)
-            
+
             state_dict["draft_response"] = draft
 
             span.set_attribute("response_length", len(draft))
@@ -366,7 +366,7 @@ def verify_node(state: AgentState) -> AgentState:
     with tracer.start_as_current_span("verify_node") as span:
         # Convert to dict for easier manipulation
         state_dict = state.model_dump() if isinstance(state, AgentState) else state
-        
+
         response = state_dict.get("draft_response", "")
         policy_snippets = state_dict.get("policy_snippets", [])
 

@@ -11,7 +11,6 @@ from typing import Any, Dict, List
 import yaml
 
 from supportops_agent.agents.graph import run_agent
-from supportops_agent.config import settings
 from supportops_agent.db import init_db
 from supportops_agent.logging import setup_logging
 

@@ -3,26 +3,25 @@
 import logging
 import uuid
 from contextlib import asynccontextmanager
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pydantic import BaseModel
-from typing import List
 
 from supportops_agent.agents.graph import run_agent
-from supportops_agent.config import settings
-from supportops_agent.db import Ticket, get_db, init_db
-from supportops_agent.logging import setup_logging
-from supportops_agent.metrics import get_metrics
 from supportops_agent.api.rate_limit import RateLimitMiddleware
 from supportops_agent.api.streaming import create_streaming_response
+from supportops_agent.config import settings
+from supportops_agent.db import Ticket, get_db, init_db
 from supportops_agent.feedback import get_feedback_collector
+from supportops_agent.logging import setup_logging
+from supportops_agent.metrics import get_metrics
 
 # Setup logging
 setup_logging()
@@ -115,7 +114,7 @@ async def get_metrics_endpoint():
 async def get_cache_stats():
     """Get cache statistics."""
     from supportops_agent.cache import get_cache
-    
+
     cache = get_cache()
     return cache.stats()
 
@@ -177,7 +176,7 @@ async def triage_ticket(request: TriageRequest):
             )
 
         get_metrics().increment("api.triage.success")
-        
+
         return {
             "request_id": request_id,
             "result": result,
@@ -196,7 +195,7 @@ async def triage_ticket(request: TriageRequest):
 async def triage_ticket_stream(request: TriageRequest):
     """Stream agent triage execution in real-time (Server-Sent Events)."""
     request_id = str(uuid.uuid4())
-    
+
     # Get ticket data
     if request.ticket_id:
         with get_db() as db:
@@ -219,7 +218,7 @@ async def triage_ticket_stream(request: TriageRequest):
 async def triage_tickets_batch(tickets: List[TriageRequest]):
     """Process multiple tickets in batch."""
     results = []
-    
+
     for ticket_request in tickets:
         try:
             # Get ticket data
@@ -242,7 +241,7 @@ async def triage_tickets_batch(tickets: List[TriageRequest]):
             # Run agent
             result = run_agent(ticket_data=ticket_data, ticket_id=ticket_data.get("ticket_id"))
             results.append({"ticket_id": ticket_data.get("ticket_id"), "result": result})
-            
+
         except Exception as e:
             logger.error(f"Batch triage failed for ticket: {e}")
             results.append({"ticket_id": ticket_request.ticket_id or "unknown", "error": str(e)})
@@ -290,7 +289,7 @@ class FeedbackRequest(BaseModel):
 async def submit_feedback(feedback: FeedbackRequest):
     """Submit human feedback on an agent run."""
     feedback_collector = get_feedback_collector()
-    
+
     feedback_collector.record_feedback(
         agent_run_id=feedback.agent_run_id,
         feedback_type=feedback.feedback_type,
@@ -298,9 +297,9 @@ async def submit_feedback(feedback: FeedbackRequest):
         comment=feedback.comment,
         corrections=feedback.corrections,
     )
-    
+
     get_metrics().increment("feedback.submitted", tags={"type": feedback.feedback_type})
-    
+
     return {"status": "recorded", "agent_run_id": feedback.agent_run_id}
 
 

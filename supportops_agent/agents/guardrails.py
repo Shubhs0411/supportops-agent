@@ -19,15 +19,21 @@ ORDER_ID_PATTERN = re.compile(r"\b(?:ORDER|ORD|#)[-]?\d{6,}\b", re.IGNORECASE)
 ADDRESS_PATTERN = re.compile(r"\b\d+\s+[A-Za-z0-9\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd)\b", re.IGNORECASE)
 
 # Prompt injection patterns
+# These are intentionally broad and case-insensitive to catch common jailbreak templates.
 PROMPT_INJECTION_PATTERNS = [
-    r"ignore\s+(?:previous|all|the)\s+instructions?",
+    # Direct override attempts
+    r"ignore\s+all\s+previous\s+instructions?",  # e.g. "Ignore all previous instructions"
+    r"ignore\s+(?:previous|all|the)\s+instructions?",  # simpler cases
     r"forget\s+(?:previous|all|the)\s+instructions?",
+    r"disregard\s+(?:previous|above)\s+instructions?",
+    # Role / system prompt manipulation
     r"you\s+are\s+now\s+(?:a|an)\s+",
     r"system\s*:\s*",
     r"assistant\s*:\s*",
     r"\[INST\]",
     r"<\|im_start\|>",
     r"<\|im_end\|>",
+    # Explicit jailbreak cues
     r"jailbreak",
     r"bypass",
     r"override",

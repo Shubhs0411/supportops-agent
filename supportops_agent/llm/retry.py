@@ -4,7 +4,7 @@ import logging
 import random
 import time
 from functools import wraps
-from typing import Any, Callable, Optional, Type, TypeVar
+from typing import Callable, Type, TypeVar
 
 logger = logging.getLogger(__name__)
 
